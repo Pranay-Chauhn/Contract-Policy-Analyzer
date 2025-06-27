@@ -63,7 +63,7 @@ coverage.xml
 
 # Local env files
 .env
-
+!.env.example
 # MyPy
 .mypy_cache/
 .dmypy.json
