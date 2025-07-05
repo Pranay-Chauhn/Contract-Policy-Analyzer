@@ -1,9 +1,10 @@
-from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain.chains import LLMChain
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from openai import base_url
-
+import streamlit as st
 from utils.chunks import split_to_chunks
 from utils.prompt import get_contract_prompt, get_policy_prompt
 from dotenv import load_dotenv
@@ -15,7 +16,8 @@ load_dotenv()
 llm = ChatOpenAI(
     base_url=os.getenv("LLM_API_BASE_URL"),
     api_key=os.getenv("LLM_API_KEY"),
-    model_name=os.getenv("LLM_MODEL_NAME")
+    model_name=os.getenv("LLM_MODEL_NAME"),
+    timeout=360
 )
 
 
@@ -28,25 +30,57 @@ def analyze_policy(text, policy_type):
     summaries = []
 
     for i, chunk in enumerate(chunks):
-        summary = chain.run(context=chunk.page_content)
-        summaries.append(f"### Section {i + 1}\n {summary}")
-
+        with st.spinner(f"extracting summary from chunk{i+1}..."):
+            try :
+                summary = chain.run(context=chunk)
+                summaries.append(f"### Section {i + 1}\n {summary}")
+            except Exception as e:
+                st.error(f"❌ Error summarizing chunk {i + 1}: {e}")
+                summaries.append(f"### Section {i + 1}\n[ERROR] {str(e)}")
     combined_summaries = "\n\n".join(summaries)
-    final_prompt_template = f"""
-You are an assistant summarizing a summarized corporate {policy_type}.
-Summarize the key points in the following areas:
-- Purpose of the policy in short summary  
-- Rules mentioned (leave, work hours, conduct, etc.). Where possible, include specific numbers, durations, or thresholds mentioned in the policy (e.g., “12 casual leaves/year”, “shift time 9–6”).
-- Any compliance/legal mentions
-- Summary in plain English
 
-Text:
-{{context}}
-"""
+    # Incase all combined_summaries length is more than the model context length limit
+    final_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=14000 * 4,
+        chunk_overlap=500 * 4
+    )
+    final_chunks = final_splitter.split_text(combined_summaries)
+    final_prompt_template = f"""
+    You are a professional HR policy analyst.
+
+    You will be given a set of summarized HR policy sections. Your task is to write a refined summary with:
+    - ✅ Clear explanation of the **purpose** of the policy
+    - ✅ **Bullet-point list of specific rules** mentioned, grouped by category (leave, working hours, conduct, dress code, etc.)
+    - ✅ Include within  the summaries and bullet-point **any specific numbers, durations, or legal names** found (e.g., "12 casual leaves", "under Payment of Wages Act, 1936")
+    - ✅ Include a list of **legal mentions or compliance statements**
+    - ✅ Write a elaborated **plain-English summary for non-legal readers**
+
+    Respond in **clear, structured markdown**.
+    Example :
+    Purpose: To define rules for employee conduct and operational clarity.
+    Rules:
+        - Employees must work from 9:30am to 6:00pm, Monday–Saturday.
+        - Lunch break is 1 hour.
+        - 18 earned leaves per year; casual leaves pro-rated if joined mid-year.
+        - Dress code is mandatory business casual.
+    Compliance: Complies with the Contract Act (1872), Minimum Wage Act (1948), ESI Act.
+    Summary : Elaborated union summary of context given here.
+    Summarized Chunks:
+    {{context}}
+    """
     final_prompt = PromptTemplate.from_template(final_prompt_template)
     final_chain = LLMChain(llm=llm, prompt=final_prompt)
-    final_summary = final_chain.run(context=combined_summaries)
 
+    # Combining the final chunks
+    final_parts = []
+    for chunk in final_chunks :
+        with st.spinner("Summarizing...") :
+            try :
+                result = final_chain.run(context=chunk)
+                final_parts.append(result)
+            except Exception as e :
+                st.error(f"❌ Error Summarizing Final Chunk : {e}")
+    final_summary = "\n\n".join(final_parts)
     return final_summary
 
 
