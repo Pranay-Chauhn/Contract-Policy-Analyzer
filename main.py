@@ -17,7 +17,7 @@ if doc_type == "Policy":
         "HR Policy", "Data Protection Policy", "IT Security Policy", "Code of Conduct"
     ])
 else:
-    contract_type = st.sidebar("Select the Contract Type", [
+    contract_type = st.selectbox("Select the Contract Type", [
         "Contract1", "Contract2", "Contract2"
     ])
 

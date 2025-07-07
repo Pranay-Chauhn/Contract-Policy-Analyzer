@@ -85,7 +85,7 @@ def analyze_policy(text, policy_type):
 
 
 def analyze_contract(text, contract_type):
-    prompt_template = get_contract_prompt()
+    prompt_template = get_contract_prompt(contract_type)
     prompt = PromptTemplate.from_template(prompt_template)
     chain = LLMChain(llm=llm, prompt=prompt)
 
@@ -93,7 +93,7 @@ def analyze_contract(text, contract_type):
     summaries = []
 
     for i, chunk in enumerate(chunks):
-        summary = chain.run(context=chunk.page_content)
+        summary = chain.run(context=chunk)
         summaries.append(f"### Section {i + 1}\n {summary}")
     combined_summary = "\n\n".join(summaries)
     # Incase all combined_summaries length is more than the model context length limit
