@@ -84,7 +84,7 @@ def analyze_policy(text, policy_type):
     return final_summary
 
 
-def analyze_contract(text):
+def analyze_contract(text, contract_type):
     prompt_template = get_contract_prompt()
     prompt = PromptTemplate.from_template(prompt_template)
     chain = LLMChain(llm=llm, prompt=prompt)
@@ -95,8 +95,50 @@ def analyze_contract(text):
     for i, chunk in enumerate(chunks):
         summary = chain.run(context=chunk.page_content)
         summaries.append(f"### Section {i + 1}\n {summary}")
+    combined_summary = "\n\n".join(summaries)
+    # Incase all combined_summaries length is more than the model context length limit
+    final_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=14000 * 4,
+        chunk_overlap=500 * 4
+    )
+    final_chunks = final_splitter.split_text(combined_summary)
+    final_prompt_template = f"""
+        You are a Professional Contract analyst.
 
-    return "\n\n".join(summaries)
+        You will be given a set of summarized {contract_type} contract. Your task is to write a refined summary with:
+        - ✅ Clear explanation of the **purpose** of the Contract
+        - ✅ **Bullet-point list of specific rules** mentioned, grouped by category (leave, working hours, conduct, dress code, etc.)
+        - ✅ Include within  the summaries and bullet-point **any specific numbers, durations, or legal names** found (e.g., "12 casual leaves", "under Payment of Wages Act, 1936")
+        - ✅ Include a list of **legal mentions or compliance statements**
+        - ✅ Write a elaborated **plain-English summary for non-legal readers**
+
+        Respond in **clear, structured markdown**.
+        Example :
+        Purpose: To define rules for employee conduct and operational clarity.
+        Rules:
+            - Employees must work from 9:30am to 6:00pm, Monday–Saturday.
+            - Lunch break is 1 hour.
+            - 18 earned leaves per year; casual leaves pro-rated if joined mid-year.
+            - Dress code is mandatory business casual.
+        Compliance: Complies with the Contract Act (1872), Minimum Wage Act (1948), ESI Act.
+        Summary : Elaborated union summary of context given here.
+        Summarized Chunks:
+        {{context}}
+        """
+    final_prompt = PromptTemplate.from_template(final_prompt_template)
+    final_chain = LLMChain(llm=llm, prompt=final_prompt)
+
+    # Combining the final chunks
+    final_parts = []
+    for chunk in final_chunks:
+        with st.spinner("Summarizing..."):
+            try:
+                result = final_chain.run(context=chunk)
+                final_parts.append(result)
+            except Exception as e:
+                st.error(f"❌ Error Summarizing Final Chunk : {e}")
+    final_summary = "\n\n".join(final_parts)
+    return final_summary
 
 
 def combine_summaries(summaries):
