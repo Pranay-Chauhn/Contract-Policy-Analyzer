@@ -1,6 +1,8 @@
 import streamlit as st
 from utils.pdf_utils import extract_text_from_pdf
 from chains.summarizer import analyze_policy, analyze_contract
+from rag.vectorstore import build_vectorstore_from_text
+from rag.ragchain import build_rag_chain
 
 st.set_page_config(page_title='Contract &  Policy Analyzer', layout='wide')
 
@@ -40,3 +42,15 @@ if uploaded_file:
 
         st.subheader("Analysis Result")
         st.write(result)
+
+    if st.button("Chat with document") :
+        with st.spinner("Setting Up Document..") :
+            vector_store = build_vectorstore_from_text(text)
+            qa_chain = build_rag_chain(vector_store)
+        st.session_state.qa_chain = qa_chain
+        st.success("Chatbot ready!")
+    if "qa_chain" in st.session_state :
+        user_question = st.text_input("Ask a question about this document")
+        if user_question:
+            response = st.session_state.qa_chain.run(user_question)
+            st.markdown(f"**Answer:** {response}")
