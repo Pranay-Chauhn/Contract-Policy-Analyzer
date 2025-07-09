@@ -3,10 +3,10 @@ from langchain_core.prompts import PromptTemplate
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain.chains import LLMChain
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from openai import base_url
+# from openai import base_url
 import streamlit as st
-from utils.chunks import split_to_chunks
-from utils.prompt import get_contract_prompt, get_policy_prompt
+from app.summary.utils.chunks import split_to_chunks
+from app.summary.utils.prompt import get_contract_prompt, get_policy_prompt
 from dotenv import load_dotenv
 import os
 
