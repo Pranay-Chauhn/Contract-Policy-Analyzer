@@ -154,3 +154,69 @@ RAG Retrieval	Bring in domain rules/templates
 LLM Summary + Scoring	Context-aware evaluation
 Rule-based Check	Hard logic for red flags & risks
 UI Feedback Layer	Clear, visual breakdown of results
+
+
+✅ How It Works (Step-by-Step)
+1. 🔍 Split the document into clauses/sections
+For example:
+
+Clause 1: Termination
+
+Clause 2: Payment Terms
+
+Clause 3: Dispute Resolution
+
+...
+
+2. 📚 Retrieve matching domain knowledge for each clause
+Use semantic search (embeddings + vector DB) to pull:
+
+Best practice for Termination clause
+
+Red flags associated with Termination
+
+Checklist items or legal standards for that clause
+
+3. 📥 Inject RAG output into prompt for that clause
+Prompt example:
+
+text
+Copy
+Edit
+You are a contract reviewer.
+
+User clause:
+"The employer may terminate the agreement without notice."
+
+Retrieved best practice:
+"Either party may terminate the agreement with 30-day written notice."
+
+Red flag pattern:
+"Termination without notice" — flagged as unfair in HR contracts.
+
+→ Evaluate the clause for risk, compliance, and suggest improvement.
+4. 🧠 Run this per clause, then aggregate the feedback in your UI.
+🎯 Why This is the Best Practice:
+Benefit	Explanation
+🎯 Focused evaluation	LLM understands clause context clearly
+🔍 Fine-grained analysis	Allows clause-level scoring/flagging
+🧠 Domain-aware output	Because you feed relevant standards
+📊 Better UI experience	Clause-by-clause feedback for the user
+
+🛠 Quick Example (Pseudo-code):
+python
+Copy
+Edit
+for clause in split_document(document_text):
+    clause_type = classify_clause(clause)  # e.g., Termination
+    retrieved_docs = vector_search(clause_type)
+    prompt = build_prompt(clause, retrieved_docs)
+    response = openai.ChatCompletion.create(prompt)
+    display(response)
+📌 Optional Enhancements
+Use tags or labels (@Termination, @Confidentiality) to improve retrieval targeting.
+
+Add rule-based triggers before/after GPT for edge cases.
+
+Cache previous GPT outputs for performance.
+
