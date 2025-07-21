@@ -1,5 +1,5 @@
 from langchain_community.chat_models import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain.chains import LLMChain
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -23,7 +23,7 @@ llm = ChatOpenAI(
 
 def analyze_policy(text, policy_type):
     prompt_template = get_policy_prompt(policy_type)
-    prompt = PromptTemplate.from_template(prompt_template)
+    prompt = ChatPromptTemplate.from_template(prompt_template)
     chain = LLMChain(llm=llm, prompt=prompt)
 
     chunks = split_to_chunks(text)
