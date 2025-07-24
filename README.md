@@ -3,6 +3,9 @@
 An AI-powered tool built to simplify the way we read and understand complex legal documents — from contracts to privacy policies. This project combines the power of large language models with real-world domain training to make policy analysis smarter, faster, and more reliable.
 
 ---
+![Project Screenshot](Screenshot 2025-07-24 152812.png)
+
+---
 
 ##  Why I Built This
 
